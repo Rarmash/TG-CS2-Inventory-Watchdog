@@ -1,7 +1,6 @@
 package com.rarmash.cs2_inventory_watchdog;
 
 import java.util.List;
-import java.io.File;
 
 public class Main {
     public static void main(String[] args) {
