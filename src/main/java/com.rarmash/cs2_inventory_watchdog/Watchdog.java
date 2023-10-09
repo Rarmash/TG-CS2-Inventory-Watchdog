@@ -1,15 +1,19 @@
 package com.rarmash.cs2_inventory_watchdog;
 
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class Watchdog {
@@ -17,9 +21,12 @@ public class Watchdog {
     private static final String marketLink = "https://steamcommunity.com/market/priceoverview/?country=us&appid=730&market_hash_name=%s&format=json";
 
     public static List<Item> scanProfile(String steamid64) throws Exception {
+        System.out.println(readPreviousTotal());
         StringBuilder inventory = scanProfileToResponse(steamid64);
         JSONArray inventoryArray = parseResponseToJSON(inventory);
         List<Item> items = fillItemsInfo(inventoryArray);
+        saveToExcel(items);
+        writeTotalToFile(getTotalInventoryPrice(items));
 
         return items;
     }
@@ -58,15 +65,12 @@ public class Watchdog {
 
     private static JSONArray parseResponseToJSON(StringBuilder response) {
         JSONObject inventoryJSON = new JSONObject(response.toString());
-        JSONArray inventoryArray = inventoryJSON.getJSONArray("descriptions");
 
-        return inventoryArray;
+        return inventoryJSON.getJSONArray("descriptions");
     }
 
     private static List<Item> fillItemsInfo(JSONArray inventoryArray) throws Exception {
         List<Item> items = new ArrayList<>();
-
-        double totalInventoryPrice = 0.0;
 
         for (int item = 0; item < inventoryArray.length(); item++) {
             JSONObject itemJSON = inventoryArray.getJSONObject(item);
@@ -82,7 +86,7 @@ public class Watchdog {
 
             Item currentItem = new Item(name, exterior, price);
             items.add(currentItem);
-            Thread.sleep(3000);
+            // Thread.sleep(3000);
         }
         return items;
     }
@@ -150,5 +154,73 @@ public class Watchdog {
         } else {
             return 0;
         }
+    }
+
+    private static double getTotalInventoryPrice(List<Item> items) {
+        double totalInventoryPrice = 0;
+        for (Item item: items) {
+            totalInventoryPrice += item.getPrice();
+        }
+        return totalInventoryPrice;
+    }
+
+    public static void writeTotalToFile(double totalInventoryPrice) {
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(Options.getPriceFile()));
+            writer.write(Double.toString(totalInventoryPrice));
+            writer.close();
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            String currentDate = sdf.format(new Date());
+            writer = new BufferedWriter(new FileWriter(Options.getPriceFile()));
+            writer.write("Total Inventory Price: $" + totalInventoryPrice);
+            writer.newLine();
+            writer.write("Date: " + currentDate);
+            writer.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static double readPreviousTotal() {
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(Options.getPriceFile()));
+            String line;
+            double previousTotal = 0;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("Total Inventory Price: $")) {
+                        String totalString = line.replace("Total Inventory Price: $", "");
+                        previousTotal = Double.parseDouble(totalString);
+                }
+            }
+            reader.close();
+            return previousTotal;
+        } catch (IOException e) {
+            return 0;
+        }
+    }
+
+    private static void saveToExcel(List<Item> items) throws Exception {
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Inventory");
+
+        Row headerRow = sheet.createRow(0);
+        headerRow.createCell(0).setCellValue("Name");
+        headerRow.createCell(1).setCellValue("Exterior");
+        headerRow.createCell(2).setCellValue("Price ($)");
+
+        for (int i = 0; i < items.size(); i++) {
+            Item item = items.get(i);
+            Row row = sheet.createRow(i+1);
+            row.createCell(0).setCellValue(item.getName());
+            row.createCell(1).setCellValue(item.getExterior());
+            row.createCell(2).setCellValue(item.getPrice());
+        }
+
+        try (FileOutputStream outputStream = new FileOutputStream(Options.getSteamID64() + ".xlsx")) {
+            workbook.write(outputStream);
+        }
+
+        workbook.close();
     }
 }

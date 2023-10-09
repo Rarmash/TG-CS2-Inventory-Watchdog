@@ -1,9 +1,11 @@
 package com.rarmash.cs2_inventory_watchdog;
 
-import java.util.List;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws TelegramApiException {
         String steamid64 = Options.getSteamID64();
         System.out.println(steamid64);
 
@@ -11,13 +13,13 @@ public class Main {
             System.err.println("STEAMID64 environment variable not set.");
         }
 
+        TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
+
         try {
-            List<Item> items = Watchdog.scanProfile(steamid64);
-            for (Item item: items) {
-                System.out.println(item.getName() + " (" + item.getExterior() + ") - " + item.getPrice());
-            }
+            Telegram bot = new Telegram();
+            botsApi.registerBot(bot);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 }
