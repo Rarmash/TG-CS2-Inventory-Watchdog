@@ -1,6 +1,6 @@
 package com.rarmash.cs2_inventory_watchdog;
 
-class Item {
+public class Item {
     private final String name;
     private final String exterior;
     private final double price;

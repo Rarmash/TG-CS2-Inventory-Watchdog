@@ -1,8 +1,8 @@
 package com.rarmash.cs2_inventory_watchdog;
 
 public class Options {
-    public static final String STEAMID64 = System.getenv("STEAMID64");
-    public static final String PRICE_FILE = "total_price_history.txt";
+    private static final String STEAMID64 = System.getenv("STEAMID64");
+    private static final String PRICE_FILE = "total_price_history.txt";
 
     public static String getSteamID64() {
         return STEAMID64;
