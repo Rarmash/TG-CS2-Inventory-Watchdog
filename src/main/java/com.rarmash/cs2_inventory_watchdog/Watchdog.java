@@ -21,7 +21,6 @@ public class Watchdog {
     private static final String marketLink = "https://steamcommunity.com/market/priceoverview/?country=us&appid=730&market_hash_name=%s&format=json";
 
     public static List<Item> scanProfile(String steamid64) throws Exception {
-        System.out.println(readPreviousTotal());
         StringBuilder inventory = scanProfileToResponse(steamid64);
         JSONArray inventoryArray = parseResponseToJSON(inventory);
         List<Item> items = fillItemsInfo(inventoryArray);
@@ -81,7 +80,7 @@ public class Watchdog {
             if (isMarketable(itemJSON)) {
                 price = getItemPrice(itemJSON);
             } else {
-                price = 0; // пустышка
+                price = 0;
             }
 
             Item currentItem = new Item(name, exterior, price);
@@ -182,7 +181,7 @@ public class Watchdog {
         }
     }
 
-    private static double readPreviousTotal() {
+    public static double readPreviousTotal() {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(Options.getPriceFile()));
             String line;
