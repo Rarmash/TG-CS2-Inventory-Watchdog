@@ -15,6 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Scanner;
 
 public class Watchdog {
     private static final String inventoryLink = "https://steamcommunity.com/inventory/%s/730/2?l=english&count=1000";
@@ -43,20 +44,19 @@ public class Watchdog {
             int responseCode = connection.getResponseCode();
             if (responseCode != 200) {
                 if (responseCode == 429) {
-                    System.err.println("Steam is blocking me :< (" + responseCode + ")");
+                    System.err.println("Steam is blocking me, try again later (Error " + responseCode + ")");
                     Thread.sleep(10000);
                 } else {
-                    throw new IOException("Failed to fetch item price data.. HTTP error code: " + responseCode);
+                    throw new IOException("Failed to get inventory data (Error: " + responseCode + ")");
                 }
             } else {
                 StringBuilder response = new StringBuilder();
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        response.append(line);
+                try (Scanner scanner = new Scanner(connection.getInputStream(), "UTF-8")) {
+                    while (scanner.hasNextLine()) {
+                        response.append(scanner.nextLine());
                     }
                 }
-                System.out.println("Got the inventory");
+                System.out.println("Inventory parsed successfully.");
                 return response;
             }
         }
@@ -125,7 +125,7 @@ public class Watchdog {
             int responseCode = connection.getResponseCode();
             if (responseCode != 200) {
                 if (responseCode == 429) {
-                    System.err.println("Steam is blocking me :< (" + responseCode + ")");
+                    System.err.println("Steam is blocking me :< (Error " + responseCode + ")");
                     Thread.sleep(5000);
                 } else if (responseCode == 500) {
                     return 0;
@@ -134,10 +134,9 @@ public class Watchdog {
                 }
             } else {
                 StringBuilder response = new StringBuilder();
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        response.append(line);
+                try (Scanner scanner = new Scanner(connection.getInputStream(), "UTF-8")) {
+                    while (scanner.hasNextLine()) {
+                        response.append(scanner.nextLine());
                     }
                 }
                 JSONObject priceJSON = new JSONObject(response.toString());
@@ -188,8 +187,8 @@ public class Watchdog {
             double previousTotal = 0;
             while ((line = reader.readLine()) != null) {
                 if (line.startsWith("Total Inventory Price: $")) {
-                        String totalString = line.replace("Total Inventory Price: $", "");
-                        previousTotal = Double.parseDouble(totalString);
+                    String totalString = line.replace("Total Inventory Price: $", "");
+                    previousTotal = Double.parseDouble(totalString);
                 }
             }
             reader.close();

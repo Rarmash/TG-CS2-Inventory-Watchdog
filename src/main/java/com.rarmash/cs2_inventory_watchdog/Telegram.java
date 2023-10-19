@@ -2,6 +2,7 @@ package com.rarmash.cs2_inventory_watchdog;
 
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -58,7 +59,7 @@ public class Telegram extends TelegramLongPollingBot {
         return Options.getTelegramToken();
     }
 
-    public void sendText(Long chatID, String textline){
+    private void sendText(Long chatID, String textline){
         SendMessage sm = SendMessage.builder()
                 .chatId(chatID.toString())
                 .text(textline).build();
@@ -69,13 +70,22 @@ public class Telegram extends TelegramLongPollingBot {
         }
     }
 
-    public void sendFile(Long chatID, InputFile file, String caption) {
+    private void sendFile(Long chatID, InputFile file, String caption) {
         SendDocument sendDocumentRequest = new SendDocument();
         sendDocumentRequest.setChatId(chatID);
         sendDocumentRequest.setDocument(file);
         sendDocumentRequest.setCaption(caption);
         try {
             execute(sendDocumentRequest);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void deleteMessage(Long chatID, int messageID) {
+        DeleteMessage deleteMessageRequest = new DeleteMessage(String.valueOf(chatID), messageID);
+        try {
+            execute(deleteMessageRequest);
         } catch (TelegramApiException e) {
             throw new RuntimeException(e);
         }
